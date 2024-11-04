@@ -1,8 +1,53 @@
 from math import isqrt, ceil
 import random
 
-# Возведение числа в степень по модулю с использованием метода двоичного возведения в степень
-def mod_exp(base, exponent, modulus, debug=False):
+def generate_large_prime(bits):
+    """
+    Генерация большого простого числа заданной битовой длины.
+    """
+    lower = 1 << (bits - 1)  # Нижняя граница: 2^(bits - 1)
+    upper = (1 << bits) - 1  # Верхняя граница: 2^bits - 1
+
+    while True:
+        candidate = random.randint(lower, upper)
+        if is_prime(candidate):
+            return candidate
+
+def is_prime(n, k=5):
+    """
+    Тест Миллера-Рабина для проверки простоты числа.
+    """
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0:
+        return False
+
+    # Представляем n-1 как 2^r * d
+    r, d = 0, n - 1
+    while d % 2 == 0:
+        r += 1
+        d //= 2
+
+    # Тестируем k раз
+    for _ in range(k):
+        a = random.randint(2, n - 2)
+        x = mod_exp(a, d, n)
+        if x == 1 or x == n - 1:
+            continue
+        for _ in range(r - 1):
+            x = mod_exp(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+def mod_exp(base, exponent, modulus):
+    """
+    Возведение числа в степень по модулю с использованием метода двоичного возведения в степень.
+    """
     result = 1
     base = base % modulus
     while exponent > 0:
@@ -12,8 +57,12 @@ def mod_exp(base, exponent, modulus, debug=False):
         base = (base * base) % modulus
     return result
 
-# Расширенный алгоритм Евклида для нахождения НОД и коэффициентов уравнения Безу
-def extended_gcd(a, b, debug=False):
+def extended_gcd(a, b):
+    """
+    Расширенный алгоритм Евклида для нахождения НОД и коэффициентов уравнения Безу.
+    Возвращает кортеж: (gcd, x, y), где gcd — наибольший общий делитель a и b,
+    а x и y — коэффициенты, такие что ax + by = gcd.
+    """
     old_r, r = a, b
     old_s, s = 1, 0
     old_t, t = 0, 1
@@ -24,16 +73,18 @@ def extended_gcd(a, b, debug=False):
         old_t, t = t, old_t - quotient * t
     return old_r, old_s, old_t
 
-# Генерация простого числа с использованием теста Ферма
 def test_ferma(p, k=5):
+    """
+    Тест простоты Ферма для числа p.
+    Возвращает True, если p, вероятно, простое.
+    """
     if p == 2:
         return True
     if p % 2 == 0:
         return False
     for _ in range(k):
         a = random.randint(2, p - 2)
-        gcd, _, _ = extended_gcd(a, p)
-        if gcd != 1 or mod_exp(a, p - 1, p) != 1:
+        if mod_exp(a, p - 1, p) != 1:
             return False
     return True
 
