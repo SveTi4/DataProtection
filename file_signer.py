@@ -13,15 +13,22 @@ from rsa_digital_signature import (
     sign_document as rsa_sign_document,
     verify_signature as rsa_verify_signature
 )
+from gost_digital_signature import gost_generate_keys, gost_sign_document, gost_verify_signature
 import json
 
 def save_key(key, file_name):
+    """
+    Сохраняет ключ в JSON-файл.
+    """
     with open(file_name, 'w') as key_file:
         json.dump(key, key_file)
 
 def load_key(file_name):
+    """
+    Загружает ключ из JSON-файла и возвращает как словарь.
+    """
     with open(file_name, 'r') as key_file:
-        return tuple(json.load(key_file))
+        return json.load(key_file)
 
 def save_signature(signature, file_name):
     with open(file_name, 'w') as sig_file:
@@ -84,9 +91,41 @@ def elgamal_verify_file(document_path):
     is_valid = elgamal_verify_signature(document_data, signature, public_key)
     print("Подпись верна." if is_valid else "Подпись неверна.")
 
+# Функции для ГОСТ
+def gost_sign_file(document_path):
+    """
+    Подписывает файл с помощью ГОСТ и сохраняет подпись и ключи.
+    """
+    with open(document_path, 'rb') as file:
+        document_data = file.read()
+
+    public_key, private_key = gost_generate_keys()
+    save_key(public_key, 'gost_public_key.json')
+    save_key(private_key, 'gost_private_key.json')
+    signature = gost_sign_document(document_data, private_key, public_key)
+    save_signature(signature, f"{document_path}.sig")
+    print(f"Документ подписан, подпись сохранена в {document_path}.sig")
+
+def gost_verify_file(document_path):
+    """
+    Проверяет подпись файла с помощью ГОСТ.
+    """
+    with open(document_path, 'rb') as file:
+        document_data = file.read()
+    
+    public_key = load_key('gost_public_key.json')
+    print("Loaded Public Key:", public_key)  # Отладочная печать
+    signature = load_signature(f"{document_path}.sig")
+    print("Loaded Signature:", signature)  # Отладочная печать
+    
+    is_valid = gost_verify_signature(document_data, signature, public_key)
+    print("Signature Valid:", is_valid)
+    print("Подпись верна." if is_valid else "Подпись неверна.")
+    print("Подпись верна." if is_valid else "Подпись неверна.")
+
 # Основной код для запуска программы
 if __name__ == "__main__":
-    print("Выберите алгоритм: RSA (1) или Эль-Гамаля (2): ")
+    print("Выберите алгоритм: RSA (1), Эль-Гамаля (2) или ГОСТ (3): ")
     algorithm = input().strip()
 
     if algorithm == '1':
@@ -110,6 +149,17 @@ if __name__ == "__main__":
         elif operation == '2':
             document_path = input("Введите путь к файлу: ").strip()
             elgamal_verify_file(document_path)
+        else:
+            print("Неверный выбор операции.")
+
+    elif algorithm == '3':
+        print("Выберите операцию: подписать файл (1) или проверить подпись (2): ")
+        operation = input().strip()
+        document_path = input("Введите путь к файлу: ").strip()
+        if operation == '1':
+            gost_sign_file(document_path)
+        elif operation == '2':
+            gost_verify_file(document_path)
         else:
             print("Неверный выбор операции.")
     else:
